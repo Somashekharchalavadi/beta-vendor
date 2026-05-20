@@ -27,5 +27,8 @@ export default defineConfig({
         },
       },
     },
-  },
+    outDir: 'build',
+    sourcemap: false,
+    chunkSizeWarningLimit: 2000,
+  }
 });
