@@ -1,0 +1,75 @@
+name: CI/CD Pipeline
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: Production
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm i --legacy-peer-deps
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_BASE_URL: ${{ vars.VITE_BASE_URL}}
+
+      # 5️ Verify build output exists
+      - name: Verify build output
+        run: |
+          if [ ! -d "build" ]; then
+            echo "Error: build/ directory not found after build"
+            exit 1
+          fi
+          echo "Build output verified"
+          ls -la build/
+
+      # 6️ Deploy to deploy branch
+      - name: Deploy build to deploy branch
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+
+          # Fetch and switch to deploy branch
+          git fetch origin
+          git checkout deploy || git checkout --orphan deploy
+
+          # Clear everything except .git and out/
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name 'build' -exec rm -rf {} +
+
+          # Move build files to root
+          mv build/* . 2>/dev/null || cp -r build/* .
+          rm -rf build
+
+          # Commit and push
+          git add .
+          git commit -m "Deploy from main @ $GITHUB_SHA" || echo "No changes to commit"
+          git push origin deploy --force
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            cd /var/www/beta-vendor
+            git fetch origin --quiet
+            git reset --hard origin/deploy
+            echo "✓ Deployment successful - HEAD is now at $(git rev-parse --short HEAD)"
+            systemctl restart nginx
+            echo "✓ Nginx restarted successfully"
