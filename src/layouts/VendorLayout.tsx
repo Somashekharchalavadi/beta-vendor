@@ -1,5 +1,4 @@
 import { Outlet } from "react-router-dom";
-import { Footer } from "../components/layout/Footer";
 import { Header } from "../components/layout/Header";
 import { Sidebar } from "../components/layout/Sidebar";
 import { useEditorReturnPath } from "../features/editor/hooks/useEditorReturnPath";
@@ -16,7 +15,6 @@ export function VendorLayout() {
           <div className="flex-1 p-6">
             <Outlet />
           </div>
-          <Footer />
         </main>
       </div>
     </div>

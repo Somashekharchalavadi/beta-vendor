@@ -7,8 +7,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { logoutApi, signInApi, validateTokenApi } from "./authApi";
-import { clearStoredSession, getStoredSession, setStoredSession } from "./authStorage";
+import { clearStoredSession, getStoredSession, getStoredToken, setStoredSession } from "./authStorage";
 import type { AuthUser } from "./types";
 
 type AuthContextValue = {
@@ -22,7 +23,12 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function hasActiveSession(token: string | null, user: AuthUser | null): boolean {
+  return Boolean(token && user && getStoredToken());
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const client = useQueryClient();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,23 +74,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     const currentToken = token ?? getStoredSession()?.token;
+    clearStoredSession();
+    setToken(null);
+    setUser(null);
+    client.clear();
+
     if (currentToken) {
       try {
         await logoutApi(currentToken);
       } catch {
-        /* clear client session even if API fails */
+        /* session already cleared locally */
       }
     }
-    clearStoredSession();
-    setToken(null);
-    setUser(null);
-  }, [token]);
+  }, [token, client]);
 
   const value = useMemo(
     () => ({
       user,
       token,
-      isAuthenticated: Boolean(token && user),
+      isAuthenticated: hasActiveSession(token, user),
       isLoading,
       login,
       logout,

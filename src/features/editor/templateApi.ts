@@ -1,9 +1,7 @@
 import { env } from "../../config/env";
+import { parseApiResponse } from "../../lib/api/parseApiResponse";
 import { getStoredToken } from "../auth/authStorage";
 import type { EditorDocument } from "./types";
-
-type ApiSuccess<T> = { success: true; data: T; message?: string };
-type ApiError = { success: false; message: string };
 
 export type TemplateRecord = EditorDocument & {
   id: string;
@@ -43,14 +41,6 @@ function authHeaders(json = true): HeadersInit {
   return headers;
 }
 
-async function parseResponse<T>(res: Response): Promise<T> {
-  const body = (await res.json()) as ApiSuccess<T> | ApiError;
-  if (!res.ok || !("success" in body) || !body.success) {
-    throw new Error("message" in body ? body.message : "Request failed");
-  }
-  return body.data;
-}
-
 export function getApiOrigin(): string {
   return env.apiBaseUrl.replace(/\/api\/v1\/?$/i, "");
 }
@@ -64,11 +54,14 @@ export function resolveAssetUrl(url: string): string {
 }
 
 export function templateToDocument(t: TemplateRecord): EditorDocument {
+  const bg = t.background ?? { color: "#ffffff", opacity: 1 };
+  const opacity =
+    typeof bg.opacity === "number" && !Number.isNaN(bg.opacity) ? bg.opacity : 1;
   return {
     title: t.title,
     canvasWidthMm: t.canvasWidthMm,
     canvasHeightMm: t.canvasHeightMm,
-    background: t.background,
+    background: { color: bg.color ?? "#ffffff", opacity },
     pages: t.pages,
     uploads: (t.uploads || []).map(resolveAssetUrl),
   };
@@ -86,7 +79,7 @@ export async function listTemplatesApi(params?: {
   if (params?.search) q.set("search", params.search);
   if (params?.status) q.set("status", params.status);
   const qs = q.toString();
-  return parseResponse<TemplateListResponse>(
+  return parseApiResponse<TemplateListResponse>(
     await fetch(`${env.apiBaseUrl}/templates${qs ? `?${qs}` : ""}`, { headers: authHeaders() }),
   );
 }
@@ -94,7 +87,7 @@ export async function listTemplatesApi(params?: {
 export async function fetchTemplateApi(
   id: string,
 ): Promise<{ template: TemplateRecord; document: EditorDocument }> {
-  const data = await parseResponse<{ template: TemplateRecord }>(
+  const data = await parseApiResponse<{ template: TemplateRecord }>(
     await fetch(`${env.apiBaseUrl}/templates/${id}`, { headers: authHeaders() }),
   );
   return { template: data.template, document: templateToDocument(data.template) };
@@ -103,7 +96,7 @@ export async function fetchTemplateApi(
 export async function createTemplateApi(
   body: Partial<EditorDocument> = {},
 ): Promise<{ template: TemplateRecord; document: EditorDocument }> {
-  const data = await parseResponse<{ template: TemplateRecord }>(
+  const data = await parseApiResponse<{ template: TemplateRecord }>(
     await fetch(`${env.apiBaseUrl}/templates`, {
       method: "POST",
       headers: authHeaders(),
@@ -117,7 +110,7 @@ export async function saveTemplateApi(
   id: string,
   document: EditorDocument,
 ): Promise<{ template: TemplateRecord; document: EditorDocument }> {
-  const data = await parseResponse<{ template: TemplateRecord }>(
+  const data = await parseApiResponse<{ template: TemplateRecord }>(
     await fetch(`${env.apiBaseUrl}/templates/${id}`, {
       method: "PUT",
       headers: authHeaders(),
@@ -131,7 +124,7 @@ export async function patchTemplateApi(
   id: string,
   patch: { title?: string; status?: string },
 ): Promise<{ template: TemplateRecord; document: EditorDocument }> {
-  const data = await parseResponse<{ template: TemplateRecord }>(
+  const data = await parseApiResponse<{ template: TemplateRecord }>(
     await fetch(`${env.apiBaseUrl}/templates/${id}`, {
       method: "PATCH",
       headers: authHeaders(),
@@ -144,7 +137,7 @@ export async function patchTemplateApi(
 export async function duplicateTemplateApi(
   id: string,
 ): Promise<{ template: TemplateRecord; document: EditorDocument }> {
-  const data = await parseResponse<{ template: TemplateRecord }>(
+  const data = await parseApiResponse<{ template: TemplateRecord }>(
     await fetch(`${env.apiBaseUrl}/templates/${id}/duplicate`, {
       method: "POST",
       headers: authHeaders(),
@@ -154,7 +147,7 @@ export async function duplicateTemplateApi(
 }
 
 export async function deleteTemplateApi(id: string): Promise<void> {
-  await parseResponse<unknown>(
+  await parseApiResponse<unknown>(
     await fetch(`${env.apiBaseUrl}/templates/${id}`, {
       method: "DELETE",
       headers: authHeaders(),
@@ -163,7 +156,7 @@ export async function deleteTemplateApi(id: string): Promise<void> {
 }
 
 export async function fetchFieldDefinitionsApi(): Promise<FieldDefinitionsResponse> {
-  return parseResponse<FieldDefinitionsResponse>(
+  return parseApiResponse<FieldDefinitionsResponse>(
     await fetch(`${env.apiBaseUrl}/field-definitions`, { headers: authHeaders() }),
   );
 }
@@ -173,7 +166,7 @@ export async function uploadTemplateAssetApi(
   dataUrl: string,
   fileName?: string,
 ): Promise<{ assetId: string; url: string }> {
-  const data = await parseResponse<{ assetId: string; url: string; fileName: string }>(
+  const data = await parseApiResponse<{ assetId: string; url: string; fileName: string }>(
     await fetch(`${env.apiBaseUrl}/templates/${templateId}/assets`, {
       method: "POST",
       headers: authHeaders(),
@@ -184,7 +177,7 @@ export async function uploadTemplateAssetApi(
 }
 
 export async function deleteTemplateAssetApi(templateId: string, assetId: string): Promise<void> {
-  await parseResponse<unknown>(
+  await parseApiResponse<unknown>(
     await fetch(`${env.apiBaseUrl}/templates/${templateId}/assets/${assetId}`, {
       method: "DELETE",
       headers: authHeaders(),

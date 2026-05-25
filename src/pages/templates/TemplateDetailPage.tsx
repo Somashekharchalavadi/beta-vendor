@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ArrowLeft, Edit3, LayoutTemplate, Trash2 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useConfirm } from "../../components/common/ConfirmDialog";
 import { PageLoader } from "../../components/common/PageLoader";
 import {
   useDeleteTemplateMutation,
@@ -25,6 +26,7 @@ function formatDate(iso?: string) {
 export function TemplateDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const confirm = useConfirm();
   const [activePageIndex, setActivePageIndex] = useState(0);
 
   const { data, isLoading, isError, error } = useTemplateQuery(id ?? null);
@@ -35,7 +37,13 @@ export function TemplateDetailPage() {
 
   const handleDelete = async () => {
     if (!id) return;
-    if (!window.confirm("Delete this template? This cannot be undone.")) return;
+    const ok = await confirm({
+      title: "Delete template",
+      description: "Delete this template? This cannot be undone.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (!ok) return;
     await deleteMutation.mutateAsync(id);
     navigate("/templates");
   };

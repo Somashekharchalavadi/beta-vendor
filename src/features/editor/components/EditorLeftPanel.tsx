@@ -1,5 +1,7 @@
 import { Search } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { useConfirm } from "../../../components/common/ConfirmDialog";
+import { FormSelect } from "../../../components/common/FormSelect";
 import { PRESET_SIZES } from "../constants";
 import { useEditor } from "../context/EditorContext";
 import { useFieldDefinitions } from "../hooks/useFieldDefinitions";
@@ -10,6 +12,8 @@ import { TEMPLATE_LIST } from "../utils/templates";
 
 export function EditorLeftPanel() {
   const { state, dispatch, addElement, templateId } = useEditor();
+  const confirm = useConfirm();
+  const [presetSelect, setPresetSelect] = useState("");
   const { fields: bindableFields, categories: fieldCategories } = useFieldDefinitions();
   const uploadAssetMutation = useUploadTemplateAssetMutation();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -103,9 +107,14 @@ export function EditorLeftPanel() {
                 type="button"
                 className="w-full rounded-xl border border-slate-100 p-3 text-left hover:border-[#006837]/40 hover:bg-emerald-50/50"
                 onClick={() => {
-                  if (confirm(`Load "${t.name}"? Current changes will be replaced.`)) {
-                    dispatch({ type: "LOAD_TEMPLATE", doc: t.build() });
-                  }
+                  void (async () => {
+                    const ok = await confirm({
+                      title: "Load template",
+                      description: `Load "${t.name}"? Current changes will be replaced.`,
+                      confirmLabel: "Load",
+                    });
+                    if (ok) dispatch({ type: "LOAD_TEMPLATE", doc: t.build() });
+                  })();
                 }}
               >
                 <p className="text-sm font-semibold text-slate-900">{t.name}</p>
@@ -335,20 +344,19 @@ export function EditorLeftPanel() {
                   />
                 </div>
               </div>
-              <select
-                className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
-                onChange={(e) => {
-                  const preset = PRESET_SIZES[Number(e.target.value)];
-                  if (preset) dispatch({ type: "SET_CANVAS_SIZE", widthMm: preset.w, heightMm: preset.h });
+              <FormSelect
+                className="h-8 text-xs"
+                value={presetSelect}
+                onValueChange={(v) => {
+                  setPresetSelect(v);
+                  const preset = PRESET_SIZES[Number(v)];
+                  if (preset) {
+                    dispatch({ type: "SET_CANVAS_SIZE", widthMm: preset.w, heightMm: preset.h });
+                  }
                 }}
-              >
-                <option value="">Preset size…</option>
-                {PRESET_SIZES.map((p, i) => (
-                  <option key={p.label} value={i}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
+                options={PRESET_SIZES.map((p, i) => ({ value: String(i), label: p.label }))}
+                placeholder="Preset size…"
+              />
             </div>
             <div>
               <p className="mb-2 text-xs font-semibold text-slate-700">Background</p>

@@ -1,4 +1,5 @@
 import { Copy, Trash2 } from "lucide-react";
+import { FormSelect } from "../../../components/common/FormSelect";
 import { FONT_FAMILIES, FONT_WEIGHTS } from "../constants";
 import { useEditor } from "../context/EditorContext";
 import { useFieldDefinitions } from "../hooks/useFieldDefinitions";
@@ -80,24 +81,20 @@ export function EditorPropertiesPanel() {
                 <p className="mb-2 text-[10px] text-slate-500">
                   Pick which backend field fills this area. You cannot enter user data here.
                 </p>
-                <select
-                  className="w-full rounded border border-slate-200 px-2 py-1.5 text-xs"
-                  value={el.fieldKey}
-                  onChange={(e) => {
-                    const def = bindableFields.find((f) => f.key === e.target.value);
+                <FormSelect
+                  className="h-8 text-xs"
+                  value={el.fieldKey ?? ""}
+                  onValueChange={(key) => {
+                    const def = bindableFields.find((f) => f.key === key);
                     updateElement(el.id, {
-                      fieldKey: e.target.value,
-                      label: def?.label ?? e.target.value,
+                      fieldKey: key,
+                      label: def?.label ?? key,
                     });
                     commit();
                   }}
-                >
-                  {bindableFields.map((f) => (
-                    <option key={f.key} value={f.key}>
-                      {f.label}
-                    </option>
-                  ))}
-                </select>
+                  options={bindableFields.map((f) => ({ value: f.key, label: f.label }))}
+                  placeholder="Select field"
+                />
                 <p className="mt-2 rounded-lg bg-slate-50 px-2 py-1.5 font-mono text-[10px] text-slate-600">
                   {getFieldPlaceholder(el.fieldKey ?? "", el.label)}
                 </p>
@@ -106,33 +103,28 @@ export function EditorPropertiesPanel() {
 
             {(el.type === "text" || el.type === "field") && (
               <Section title={el.type === "field" ? "Field style (layout only)" : "Text style (layout only)"}>
-                <select
-                  className="mb-2 w-full rounded border border-slate-200 px-2 py-1.5 text-xs"
-                  value={el.fontFamily}
-                  onChange={(e) => {
-                    updateElement(el.id, { fontFamily: e.target.value });
+                <FormSelect
+                  className="mb-2 h-8 text-xs"
+                  value={el.fontFamily ?? FONT_FAMILIES[0]}
+                  onValueChange={(fontFamily) => {
+                    updateElement(el.id, { fontFamily });
                     commit();
                   }}
-                >
-                  {FONT_FAMILIES.map((f) => (
-                    <option key={f}>{f}</option>
-                  ))}
-                </select>
+                  options={FONT_FAMILIES.map((f) => ({ value: f, label: f }))}
+                />
                 <div className="grid grid-cols-2 gap-2">
-                  <select
-                    className="rounded border border-slate-200 px-2 py-1.5 text-xs"
-                    value={el.fontWeight}
-                    onChange={(e) => {
-                      updateElement(el.id, { fontWeight: e.target.value });
+                  <FormSelect
+                    className="h-8 text-xs"
+                    value={el.fontWeight ?? "400"}
+                    onValueChange={(fontWeight) => {
+                      updateElement(el.id, { fontWeight });
                       commit();
                     }}
-                  >
-                    {FONT_WEIGHTS.map((w) => (
-                      <option key={w} value={w}>
-                        {w === "400" ? "Regular" : w === "700" ? "Bold" : w}
-                      </option>
-                    ))}
-                  </select>
+                    options={FONT_WEIGHTS.map((w) => ({
+                      value: w,
+                      label: w === "400" ? "Regular" : w === "700" ? "Bold" : w,
+                    }))}
+                  />
                   <input
                     type="number"
                     className="rounded border border-slate-200 px-2 py-1.5 text-xs"

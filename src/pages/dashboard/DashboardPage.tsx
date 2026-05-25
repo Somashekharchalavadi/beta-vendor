@@ -32,7 +32,11 @@ import {
   greetingForUser,
 } from "../../features/dashboard/utils";
 import type { DashboardActivity } from "../../features/dashboard/dashboardApi";
+import { FormSelect } from "../../components/common/FormSelect";
+import { getActivityHref } from "../../features/dashboard/activityNavigation";
 import { CreateSheetRequestModal } from "../../features/sheet-requests/components/CreateSheetRequestModal";
+import { PrintSheetPromptDialog } from "../../features/sheet-requests/components/PrintSheetPromptDialog";
+import type { SheetRequestSuccessPayload } from "../../features/sheet-requests/components/CreateSheetRequestModal";
 import { useQueryClient } from "@tanstack/react-query";
 import { dashboardKeys } from "../../features/dashboard/api/queryKeys";
 import { LocationMapSection } from "../../features/dashboard/components/LocationMapSection";
@@ -72,15 +76,23 @@ export function DashboardPage() {
   const { user } = useAuth();
   const [days, setDays] = useState(7);
   const [sheetModalOpen, setSheetModalOpen] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [printPrompt, setPrintPrompt] = useState<SheetRequestSuccessPayload | null>(null);
 
   const { data, isLoading, isError, error, refetch, isFetching } = useDashboardQuery(days);
 
-  const handleSheetSuccess = () => {
-    setSuccessMessage(
-      "Sheet request submitted successfully. Dashboard stats will update shortly.",
-    );
+  const rangeSelectOptions = RANGE_OPTIONS.map((o) => ({
+    value: String(o.days),
+    label: o.label,
+  }));
+
+  const handleSheetSuccess = (payload: SheetRequestSuccessPayload) => {
+    setPrintPrompt(payload);
     void queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+  };
+
+  const handleActivityClick = (activity: DashboardActivity) => {
+    const href = getActivityHref(activity);
+    if (href) navigate(href);
   };
 
   if (isLoading) {
@@ -168,18 +180,13 @@ export function DashboardPage() {
             <FilePlus className="h-4 w-4" />
             Create sheet request
           </button>
-          <select
-            value={days}
-            onChange={(e) => setDays(Number(e.target.value))}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 shadow-sm focus:border-brand-600 focus:outline-none"
+          <FormSelect
+            value={String(days)}
+            onValueChange={(v) => setDays(Number(v))}
+            options={rangeSelectOptions}
+            className="w-[160px] shadow-sm"
             aria-label="Date range"
-          >
-            {RANGE_OPTIONS.map((o) => (
-              <option key={o.days} value={o.days}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+          />
           <button
             type="button"
             onClick={() => refetch()}
@@ -194,16 +201,17 @@ export function DashboardPage() {
 
       <p className="text-xs text-slate-400">{range.label}</p>
 
-      {successMessage && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          {successMessage}
-        </div>
-      )}
-
       <CreateSheetRequestModal
         open={sheetModalOpen}
         onClose={() => setSheetModalOpen(false)}
         onSuccess={handleSheetSuccess}
+      />
+
+      <PrintSheetPromptDialog
+        open={printPrompt !== null}
+        templateId={printPrompt?.templateId ?? null}
+        sheetName={printPrompt?.name}
+        onDismiss={() => setPrintPrompt(null)}
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -296,8 +304,9 @@ export function DashboardPage() {
               {recentActivity.map((a, i) => {
                 const style = ACTIVITY_STYLES[a.type];
                 const Icon = style.icon;
-                return (
-                  <div key={`${a.type}-${a.createdAt}-${i}`} className="flex items-start gap-3">
+                const href = getActivityHref(a);
+                const inner = (
+                  <>
                     <div
                       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${style.color}`}
                     >
@@ -311,6 +320,20 @@ export function DashboardPage() {
                       </p>
                     </div>
                     <span className="shrink-0 text-[11px] text-slate-400">{a.timeAgo}</span>
+                  </>
+                );
+                return href ? (
+                  <button
+                    key={`${a.type}-${a.id}-${i}`}
+                    type="button"
+                    onClick={() => handleActivityClick(a)}
+                    className="flex w-full items-start gap-3 rounded-xl p-2 text-left transition-colors hover:bg-slate-50"
+                  >
+                    {inner}
+                  </button>
+                ) : (
+                  <div key={`${a.type}-${a.createdAt}-${i}`} className="flex items-start gap-3 p-2">
+                    {inner}
                   </div>
                 );
               })}

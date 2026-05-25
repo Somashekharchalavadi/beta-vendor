@@ -1,8 +1,6 @@
 import { env } from "../../config/env";
+import { parseApiResponse } from "../../lib/api/parseApiResponse";
 import { getStoredToken } from "../auth/authStorage";
-
-type ApiSuccess<T> = { success: true; data: T; message?: string };
-type ApiError = { success: false; message: string };
 
 export type SheetRequestRecord = {
   id: string;
@@ -50,23 +48,16 @@ function authHeaders(): HeadersInit {
   };
 }
 
-async function parseResponse<T>(res: Response): Promise<T> {
-  const body = (await res.json()) as ApiSuccess<T> | ApiError;
-  if (!res.ok || !("success" in body) || !body.success) {
-    throw new Error("message" in body ? body.message : "Request failed");
-  }
-  return body.data;
-}
-
 export async function createSheetRequestApi(
   payload: CreateSheetRequestPayload,
 ): Promise<{ sheetRequest: SheetRequestRecord }> {
-  return parseResponse<{ sheetRequest: SheetRequestRecord }>(
+  return parseApiResponse<{ sheetRequest: SheetRequestRecord }>(
     await fetch(`${env.apiBaseUrl}/sheet-requests`, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify(payload),
     }),
+    { notifySuccess: false, notifyToast: true },
   );
 }
 
@@ -80,7 +71,7 @@ export async function listSheetRequestsApi(params?: {
   const qs = q.toString();
   const token = getStoredToken();
   if (!token) throw new Error("Please sign in");
-  return parseResponse<SheetRequestListResponse>(
+  return parseApiResponse<SheetRequestListResponse>(
     await fetch(`${env.apiBaseUrl}/sheet-requests${qs ? `?${qs}` : ""}`, {
       headers: { Authorization: `Bearer ${token}` },
     }),

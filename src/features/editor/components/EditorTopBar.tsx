@@ -13,11 +13,14 @@ import {
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import { useNavigate } from "react-router-dom";
+import { useConfirm } from "../../../components/common/ConfirmDialog";
+import { HintTooltip } from "../../../components/ui/tooltip";
 import { useEditor } from "../context/EditorContext";
 import { sanitizeTemplateDocument } from "../utils/fieldData";
 
 export function EditorTopBar() {
   const navigate = useNavigate();
+  const confirm = useConfirm();
   const { state, dispatch, canUndo, canRedo, saveToServer, saveToLocal, isSaving, templateId } = useEditor();
   const [titleEditing, setTitleEditing] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
@@ -33,9 +36,14 @@ export function EditorTopBar() {
     }
   };
 
-  const goBack = () => {
+  const goBack = async () => {
     if (!state.isSaved) {
-      const leave = window.confirm("You have unsaved changes. Leave the editor anyway?");
+      const leave = await confirm({
+        title: "Unsaved changes",
+        description: "You have unsaved changes. Leave the editor anyway?",
+        confirmLabel: "Leave",
+        variant: "danger",
+      });
       if (!leave) return;
     }
     const from = sessionStorage.getItem("documentsheet-editor-return");
@@ -72,15 +80,16 @@ export function EditorTopBar() {
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4">
       <div className="flex min-w-0 items-center gap-3">
-        <button
-          type="button"
-          onClick={goBack}
-          className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-          title="Back to previous page"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span className="hidden sm:inline">Back</span>
-        </button>
+        <HintTooltip content="Return to the previous page">
+          <button
+            type="button"
+            onClick={() => void goBack()}
+            className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">Back</span>
+          </button>
+        </HintTooltip>
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#006837] text-white">
           <LayoutTemplate className="h-4 w-4" />
         </div>
@@ -115,34 +124,41 @@ export function EditorTopBar() {
           {isSaving ? "Saving…" : state.isSaved ? (templateId ? "Saved" : "Saved locally") : "Unsaved"}
         </span>
         {saveError && <span className="max-w-[120px] truncate text-xs text-red-500">{saveError}</span>}
-        <button
-          type="button"
-          disabled={!canUndo}
-          className="disabled:opacity-30"
-          onClick={() => dispatch({ type: "UNDO" })}
-          title="Undo (⌘Z)"
-        >
-          <Undo2 className="h-4 w-4 hover:text-slate-700" />
-        </button>
-        <button
-          type="button"
-          disabled={!canRedo}
-          className="disabled:opacity-30"
-          onClick={() => dispatch({ type: "REDO" })}
-          title="Redo (⌘⇧Z)"
-        >
-          <Redo2 className="h-4 w-4 hover:text-slate-700" />
-        </button>
+        <HintTooltip content="Undo last change (⌘Z)">
+          <button
+            type="button"
+            disabled={!canUndo}
+            className="flex items-center gap-1 disabled:opacity-30"
+            onClick={() => dispatch({ type: "UNDO" })}
+          >
+            <Undo2 className="h-4 w-4 hover:text-slate-700" />
+            <span className="hidden text-xs lg:inline">Undo</span>
+          </button>
+        </HintTooltip>
+        <HintTooltip content="Redo (⌘⇧Z)">
+          <button
+            type="button"
+            disabled={!canRedo}
+            className="flex items-center gap-1 disabled:opacity-30"
+            onClick={() => dispatch({ type: "REDO" })}
+          >
+            <Redo2 className="h-4 w-4 hover:text-slate-700" />
+            <span className="hidden text-xs lg:inline">Redo</span>
+          </button>
+        </HintTooltip>
       </div>
 
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          onClick={() => dispatch({ type: "SET_PREVIEW", open: true })}
-        >
-          <Eye className="h-4 w-4" /> Preview with sample data
-        </button>
+        <HintTooltip content="Preview the layout with sample field data">
+          <button
+            type="button"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            onClick={() => dispatch({ type: "SET_PREVIEW", open: true })}
+          >
+            <Eye className="h-4 w-4" />
+            <span className="hidden sm:inline">Preview</span>
+          </button>
+        </HintTooltip>
         <div className="relative">
           <button
             type="button"

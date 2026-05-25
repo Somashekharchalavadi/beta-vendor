@@ -33,6 +33,31 @@ const WalletPage = lazy(() =>
 const PlaceholderPage = lazy(() =>
   import("../../pages/PlaceholderPage").then((m) => ({ default: m.PlaceholderPage })),
 );
+const SearchPage = lazy(() =>
+  import("../../pages/search/SearchPage").then((m) => ({ default: m.SearchPage })),
+);
+const NotificationsPage = lazy(() =>
+  import("../../pages/notifications/NotificationsPage").then((m) => ({
+    default: m.NotificationsPage,
+  })),
+);
+const OrganizationsPage = lazy(() =>
+  import("../../pages/organizations/OrganizationsPage").then((m) => ({
+    default: m.OrganizationsPage,
+  })),
+);
+const StudentsPage = lazy(() =>
+  import("../../pages/students/StudentsPage").then((m) => ({ default: m.StudentsPage })),
+);
+const SettingsPage = lazy(() =>
+  import("../../pages/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })),
+);
+const SupportPage = lazy(() =>
+  import("../../pages/support/SupportPage").then((m) => ({ default: m.SupportPage })),
+);
+const PaymentResultPage = lazy(() =>
+  import("../../pages/payment/PaymentResultPage").then((m) => ({ default: m.PaymentResultPage })),
+);
 
 function LazyPage({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
@@ -60,6 +85,14 @@ export function AppRouter() {
               element={
                 <LazyPage>
                   <EditorPage />
+                </LazyPage>
+              }
+            />
+            <Route
+              path="/payment/result"
+              element={
+                <LazyPage>
+                  <PaymentResultPage />
                 </LazyPage>
               }
             />
@@ -116,7 +149,7 @@ export function AppRouter() {
                 path="organizations"
                 element={
                   <LazyPage>
-                    <PlaceholderPage title="Organizations" description="Manage schools and institutions." />
+                    <OrganizationsPage />
                   </LazyPage>
                 }
               />
@@ -124,7 +157,7 @@ export function AppRouter() {
                 path="students"
                 element={
                   <LazyPage>
-                    <PlaceholderPage title="Students" description="Import and manage student records." />
+                    <StudentsPage />
                   </LazyPage>
                 }
               />
@@ -132,7 +165,7 @@ export function AppRouter() {
                 path="notifications"
                 element={
                   <LazyPage>
-                    <PlaceholderPage title="Notifications" />
+                    <NotificationsPage />
                   </LazyPage>
                 }
               />
@@ -140,7 +173,7 @@ export function AppRouter() {
                 path="security"
                 element={
                   <LazyPage>
-                    <PlaceholderPage title="Security" />
+                    <PlaceholderPage title="Security" description="Session and account security settings coming soon." />
                   </LazyPage>
                 }
               />
@@ -148,7 +181,7 @@ export function AppRouter() {
                 path="support"
                 element={
                   <LazyPage>
-                    <PlaceholderPage title="Support" />
+                    <SupportPage />
                   </LazyPage>
                 }
               />
@@ -156,7 +189,15 @@ export function AppRouter() {
                 path="settings"
                 element={
                   <LazyPage>
-                    <PlaceholderPage title="Settings" />
+                    <SettingsPage />
+                  </LazyPage>
+                }
+              />
+              <Route
+                path="search"
+                element={
+                  <LazyPage>
+                    <SearchPage />
                   </LazyPage>
                 }
               />

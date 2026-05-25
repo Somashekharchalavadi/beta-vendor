@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { CanvasPage, EditorDocument } from "../../editor/types";
-import { CanvasElementView } from "../../editor/components/CanvasElementView";
+import { SheetCanvasContent } from "../../editor/components/SheetCanvasContent";
 import { computeFitZoom } from "../../editor/utils/fitZoom";
 import { mmToPx } from "../../editor/utils/units";
 
@@ -29,8 +29,11 @@ export function TemplateCanvasPreview({
     if (!el) return;
 
     const update = () => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      if (w < 8 || h < 8) return;
       setZoom(
-        computeFitZoom(document.canvasWidthMm, document.canvasHeightMm, el.clientWidth, el.clientHeight),
+        computeFitZoom(document.canvasWidthMm, document.canvasHeightMm, w, h),
       );
     };
 
@@ -48,13 +51,10 @@ export function TemplateCanvasPreview({
     );
   }
 
-  const sorted = [...page.elements].sort((a, b) => a.zIndex - b.zIndex);
-  const bgOpacity = document.background.opacity;
-
   return (
     <div
       ref={viewportRef}
-      className={`flex min-h-[320px] w-full items-center justify-center overflow-auto bg-[#e8ecf0] p-8 ${className}`}
+      className={`flex h-full min-h-[200px] w-full items-center justify-center overflow-auto bg-[#e8ecf0] p-6 ${className}`}
     >
       <div
         className="relative shrink-0 overflow-hidden rounded-sm shadow-2xl ring-1 ring-slate-200/80"
@@ -69,21 +69,16 @@ export function TemplateCanvasPreview({
             width: widthPx,
             height: heightPx,
             transform: `scale(${zoom})`,
-            backgroundColor: document.background.color,
-            opacity: bgOpacity,
           }}
         >
-          {sorted.map((el) => (
-            <CanvasElementView
-              key={el.id}
-              element={el}
-              isSelected={false}
-              isPreview
-              fieldData={fieldData}
-              onSelect={() => {}}
-              onPointerDown={() => {}}
-            />
-          ))}
+          <SheetCanvasContent
+            document={document}
+            page={page}
+            widthPx={widthPx}
+            heightPx={heightPx}
+            fieldData={fieldData}
+            isPreview
+          />
         </div>
       </div>
     </div>

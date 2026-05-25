@@ -40,3 +40,61 @@ body {
   background: #cbd5e1;
   border-radius: 3px;
 }
+
+/* Sheet view — copy / selection deterrents (screenshots cannot be fully blocked in browsers) */
+.sheet-protected-area {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.sheet-protected-area img {
+  -webkit-user-drag: none;
+  user-drag: none;
+  pointer-events: none;
+}
+
+.sheet-watermark {
+  mix-blend-mode: multiply;
+}
+
+/* Sheet print — only when started after create (body.sheet-print-active) */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  body.sheet-print-active #sheet-print-root,
+  body.sheet-print-active #sheet-print-root * {
+    visibility: visible !important;
+  }
+
+  body.sheet-print-active #sheet-print-root {
+    display: block !important;
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+    page-break-before: avoid !important;
+    page-break-after: avoid !important;
+    break-before: avoid !important;
+    break-after: avoid !important;
+  }
+
+  body.sheet-print-active #sheet-print-canvas {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    overflow: hidden !important;
+    box-shadow: none !important;
+  }
+
+  body.sheet-print-active #sheet-print-canvas,
+  body.sheet-print-active #sheet-print-canvas * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

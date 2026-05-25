@@ -39,4 +39,9 @@ declare module "react-simple-maps" {
   }): ReactNode;
 
   export function Graticule(props: { stroke?: string; strokeWidth?: number }): ReactNode;
+
+  export function Marker(props: {
+    coordinates: [number, number];
+    children?: ReactNode;
+  }): ReactNode;
 }

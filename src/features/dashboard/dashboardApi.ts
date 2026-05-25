@@ -1,11 +1,11 @@
 import { env } from "../../config/env";
+import { parseApiResponse } from "../../lib/api/parseApiResponse";
 import { getStoredToken } from "../auth/authStorage";
-
-type ApiSuccess<T> = { success: true; data: T };
-type ApiError = { success: false; message: string };
 
 export type DashboardActivity = {
   type: "sheet_request" | "template";
+  id: string;
+  templateId?: string;
   title: string;
   subtitle: string;
   detail: string;
@@ -45,18 +45,10 @@ export type DashboardData = {
   };
 };
 
-async function parseResponse<T>(res: Response): Promise<T> {
-  const body = (await res.json()) as ApiSuccess<T> | ApiError;
-  if (!res.ok || !("success" in body) || !body.success) {
-    throw new Error("message" in body ? body.message : "Request failed");
-  }
-  return body.data;
-}
-
 export async function fetchDashboardApi(days = 7): Promise<DashboardData> {
   const token = getStoredToken();
   if (!token) throw new Error("Please sign in");
-  return parseResponse<DashboardData>(
+  return parseApiResponse<DashboardData>(
     await fetch(`${env.apiBaseUrl}/dashboard?days=${days}`, {
       headers: { Authorization: `Bearer ${token}` },
     }),

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { LayoutTemplate, Plus, Search } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { FormSelect } from "../../components/common/FormSelect";
 import { PageLoader } from "../../components/common/PageLoader";
 import { StatCard } from "../../components/common/StatCard";
 import { useTemplatesListQuery } from "../../features/editor/hooks/useEditorQueries";
@@ -27,12 +28,12 @@ function formatUpdatedAt(iso?: string) {
 export function TemplatesPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const { data, isLoading, isError, error } = useTemplatesListQuery({
     limit: 50,
     search: search.trim() || undefined,
-    status: statusFilter || undefined,
+    status: statusFilter === "all" ? undefined : statusFilter,
   });
 
   const items = data?.items ?? [];
@@ -108,16 +109,17 @@ export function TemplatesPage() {
               className="w-full rounded-xl border border-slate-200 py-2 pl-10 pr-4 text-sm focus:border-brand-600 focus:outline-none"
             />
           </div>
-          <select
+          <FormSelect
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600"
-          >
-            <option value="">All statuses</option>
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-            <option value="archived">Archived</option>
-          </select>
+            onValueChange={setStatusFilter}
+            options={[
+              { value: "all", label: "All statuses" },
+              { value: "draft", label: "Draft" },
+              { value: "published", label: "Published" },
+              { value: "archived", label: "Archived" },
+            ]}
+            className="w-[160px]"
+          />
         </div>
 
         {isLoading && <PageLoader />}

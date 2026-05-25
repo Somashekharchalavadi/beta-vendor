@@ -30,7 +30,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Students", path: "/students", icon: GraduationCap },
   { label: "Analytics", path: "/analytics", icon: BarChart3 },
   { label: "Wallet & Billing", path: "/wallet", icon: CreditCard },
-  { label: "Notifications", path: "/notifications", icon: Bell, badge: 12 },
+  { label: "Notifications", path: "/notifications", icon: Bell },
   { label: "Security", path: "/security", icon: Shield },
   { label: "Support", path: "/support", icon: HelpCircle },
   { label: "Settings", path: "/settings", icon: Settings },

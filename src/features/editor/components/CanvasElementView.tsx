@@ -1,4 +1,5 @@
 import { QRCodeSVG } from "qrcode.react";
+import { resolveAssetUrl } from "../templateApi";
 import type { CanvasElement } from "../types";
 import {
   getFieldPlaceholder,
@@ -151,9 +152,10 @@ function renderContent(
         </div>
       );
     }
-    case "image":
-      return el.src ? (
-        <img src={el.src} alt="" className="h-full w-full object-cover" style={{ borderRadius: el.borderRadius }} draggable={false} />
+    case "image": {
+      const src = el.src ? resolveAssetUrl(el.src) : "";
+      return src ? (
+        <img src={src} alt="" className="h-full w-full object-cover" style={{ borderRadius: el.borderRadius }} draggable={false} crossOrigin="anonymous" />
       ) : (
         <div
           className="flex h-full w-full items-center justify-center bg-slate-200 text-xs text-slate-500"
@@ -162,6 +164,7 @@ function renderContent(
           Image
         </div>
       );
+    }
     case "shape":
       if (el.shape === "circle") {
         return (

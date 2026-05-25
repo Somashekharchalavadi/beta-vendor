@@ -1,11 +1,11 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useEditor } from "../context/EditorContext";
-import { useFitCanvasZoom } from "../hooks/useFitCanvasZoom";
 import { snapValue, mmToPx } from "../utils/units";
-import { CanvasElementView } from "./CanvasElementView";
+import { SheetCanvasContent } from "./SheetCanvasContent";
 
 const GRID = 8;
 const CANVAS_MARGIN = 48;
+const ZOOM_STEP = 0.08;
 
 type DragState = {
   mode: "move" | "resize";
@@ -25,13 +25,31 @@ export function EditorCanvas({ isPreview = false }: { isPreview?: boolean }) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
 
-  useFitCanvasZoom(isPreview ? { current: null } : viewportRef);
-
   const widthPx = mmToPx(state.doc.canvasWidthMm);
   const heightPx = mmToPx(state.doc.canvasHeightMm);
   const zoom = state.zoom;
 
-  const sorted = [...activePage.elements].sort((a, b) => a.zIndex - b.zIndex);
+  const setZoomClamped = useCallback(
+    (next: number) => {
+      dispatch({ type: "SET_ZOOM", zoom: Math.min(3, Math.max(0.25, next)) });
+    },
+    [dispatch],
+  );
+
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el || isPreview) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (!e.shiftKey) return;
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+      setZoomClamped(zoom + delta);
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [isPreview, setZoomClamped, zoom]);
 
   const onCanvasPointerDown = () => {
     if (!isPreview) selectElement(null);
@@ -107,34 +125,40 @@ export function EditorCanvas({ isPreview = false }: { isPreview?: boolean }) {
     window.addEventListener("pointerup", onPointerUp);
   };
 
-  const bgOpacity = state.doc.background.opacity;
+  const showGrid = state.showGrid && !isPreview;
+  const gridSize = GRID * zoom;
 
   return (
     <div
       ref={viewportRef}
       data-canvas-viewport
-      className="relative min-h-0 flex-1 overflow-auto"
+      className="relative min-h-0 flex-1 overflow-auto bg-[#e8ecf0]"
       onPointerDown={onCanvasPointerDown}
     >
       <div
-        className="flex min-h-full min-w-full items-center justify-center"
+        className="relative z-[1] flex min-h-full min-w-full items-center justify-center"
         style={{
           padding: CANVAS_MARGIN,
           minWidth: widthPx * zoom + CANVAS_MARGIN * 2,
           minHeight: heightPx * zoom + CANVAS_MARGIN * 2,
-          backgroundImage: state.showGrid && !isPreview
-            ? "radial-gradient(circle, #94a3b8 1px, transparent 1px)"
-            : undefined,
-          backgroundSize: `${GRID * zoom}px ${GRID * zoom}px`,
         }}
       >
+        {showGrid && (
+          <div
+            className="pointer-events-none absolute inset-0"
+            aria-hidden
+            style={{
+              backgroundImage: "radial-gradient(circle, #94a3b8 1px, transparent 1px)",
+              backgroundSize: `${gridSize}px ${gridSize}px`,
+            }}
+          />
+        )}
         <div
           ref={canvasRef}
           className="relative shrink-0 overflow-hidden rounded-sm shadow-2xl ring-1 ring-slate-200/80"
           style={{
             width: widthPx * zoom,
             height: heightPx * zoom,
-            transformOrigin: "center center",
           }}
           onPointerDown={(e) => e.stopPropagation()}
         >
@@ -145,20 +169,18 @@ export function EditorCanvas({ isPreview = false }: { isPreview?: boolean }) {
               width: widthPx,
               height: heightPx,
               transform: `scale(${zoom})`,
-              backgroundColor: state.doc.background.color,
-              opacity: bgOpacity,
             }}
           >
-            {sorted.map((el) => (
-              <CanvasElementView
-                key={el.id}
-                element={el}
-                isSelected={state.selectedId === el.id}
-                isPreview={isPreview}
-                onSelect={() => selectElement(el.id)}
-                onPointerDown={(e, mode, handle) => startDrag(e, el.id, mode, handle)}
-              />
-            ))}
+            <SheetCanvasContent
+              document={state.doc}
+              page={activePage}
+              widthPx={widthPx}
+              heightPx={heightPx}
+              isPreview={isPreview}
+              selectedId={state.selectedId}
+              onSelect={selectElement}
+              onPointerDown={(e, id, mode, handle) => startDrag(e, id, mode, handle)}
+            />
           </div>
         </div>
       </div>

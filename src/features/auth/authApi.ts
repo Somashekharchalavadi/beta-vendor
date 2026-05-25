@@ -1,25 +1,7 @@
 import { env } from "../../config/env";
+import { parseApiResponse } from "../../lib/api/parseApiResponse";
 import { encryptObject } from "../../lib/crypto";
 import type { AuthSession, AuthUser } from "./types";
-
-type ApiSuccess<T> = {
-  success: true;
-  message?: string;
-  data: T;
-};
-
-type ApiError = {
-  success: false;
-  message: string;
-};
-
-async function parseResponse<T>(res: Response): Promise<T> {
-  const body = (await res.json()) as ApiSuccess<T> | ApiError;
-  if (!res.ok || !("success" in body) || !body.success) {
-    throw new Error("message" in body ? body.message : "Request failed");
-  }
-  return body.data;
-}
 
 export async function signInApi(input: {
   email?: string;
@@ -38,7 +20,7 @@ export async function signInApi(input: {
     body: JSON.stringify(encrypted),
   });
 
-  return parseResponse<AuthSession>(res);
+  return parseApiResponse<AuthSession>(res);
 }
 
 export async function validateTokenApi(token: string): Promise<AuthUser> {
@@ -46,7 +28,7 @@ export async function validateTokenApi(token: string): Promise<AuthUser> {
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  const data = await parseResponse<{ user: AuthUser }>(res);
+  const data = await parseApiResponse<{ user: AuthUser }>(res);
   return data.user;
 }
 
@@ -56,5 +38,5 @@ export async function logoutApi(token: string): Promise<void> {
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  await parseResponse<unknown>(res);
+  await parseApiResponse<null>(res, { notifySuccess: false });
 }

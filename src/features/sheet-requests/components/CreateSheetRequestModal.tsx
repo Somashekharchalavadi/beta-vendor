@@ -1,23 +1,34 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { FileText, Loader2, X } from "lucide-react";
-import { INDIAN_STATES } from "../../../constants/indianStates";
+import { FormSelect } from "../../../components/common/FormSelect";
 import { PageLoader } from "../../../components/common/PageLoader";
+import { INDIAN_STATES } from "../../../constants/indianStates";
+import { useDistrictsForState } from "../../../hooks/useDistrictsForState";
 import { useTemplatesListQuery } from "../../editor/hooks/useEditorQueries";
 import { SEAT_OPTIONS, todayDateInputValue } from "../constants";
-import { useCreateSheetRequestMutation } from "../hooks/useSheetRequestQueries";
+import { usePaymentConfigQuery, useInitiateSheetPaymentMutation } from "../../payments/hooks/usePaymentQueries";
+import { formatSheetOrderAmount } from "../../payments/paymentUtils";
 import { TemplatePickerCard } from "./TemplatePickerCard";
+
+export type SheetRequestSuccessPayload = {
+  templateId: string;
+  name: string;
+};
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  /** Called after payment + sheet creation (handled on payment result page). */
+  onSuccess?: (payload: SheetRequestSuccessPayload) => void;
 };
 
 const inputClass =
   "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600";
 const labelClass = "mb-1 block text-xs font-medium text-slate-600";
 
-export function CreateSheetRequestModal({ open, onClose, onSuccess }: Props) {
+const stateOptions = INDIAN_STATES.map((s) => ({ value: s, label: s }));
+
+export function CreateSheetRequestModal({ open, onClose, onSuccess: _onSuccess }: Props) {
   const minDate = todayDateInputValue();
 
   const [name, setName] = useState("");
@@ -36,9 +47,18 @@ export function CreateSheetRequestModal({ open, onClose, onSuccess }: Props) {
     { limit: 50 },
     open,
   );
-  const createMutation = useCreateSheetRequestMutation();
+  const { data: paymentConfig } = usePaymentConfigQuery(open);
+  const payMutation = useInitiateSheetPaymentMutation();
 
   const templates = templatesData?.items ?? [];
+
+  const districts = useDistrictsForState(state);
+  const districtOptions = useMemo(
+    () => districts.map((d) => ({ value: d, label: d })),
+    [districts],
+  );
+
+  const seatSelectOptions = SEAT_OPTIONS.map((o) => ({ value: o.value, label: o.label }));
 
   const resetForm = () => {
     setName("");
@@ -55,9 +75,14 @@ export function CreateSheetRequestModal({ open, onClose, onSuccess }: Props) {
   };
 
   const handleClose = () => {
-    if (createMutation.isPending) return;
+    if (payMutation.isPending) return;
     resetForm();
     onClose();
+  };
+
+  const handleStateChange = (nextState: string) => {
+    setState(nextState);
+    setDistrict("");
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -69,14 +94,14 @@ export function CreateSheetRequestModal({ open, onClose, onSuccess }: Props) {
       return;
     }
     if (!name.trim()) {
-      setFormError("Name is required");
+      setFormError("Request name is required");
       return;
     }
     if (!state) {
       setFormError("State is required");
       return;
     }
-    if (!district.trim()) {
+    if (!district) {
       setFormError("District is required");
       return;
     }
@@ -85,7 +110,7 @@ export function CreateSheetRequestModal({ open, onClose, onSuccess }: Props) {
       return;
     }
     if (!place.trim()) {
-      setFormError("Place is required");
+      setFormError("Venue / locality is required");
       return;
     }
     if (eventDate < minDate) {
@@ -100,24 +125,31 @@ export function CreateSheetRequestModal({ open, onClose, onSuccess }: Props) {
       }
     }
 
+    const payload = {
+      templateId,
+      name: name.trim(),
+      reason: reason.trim() || undefined,
+      eventDate,
+      state,
+      district,
+      pincode: pincode.trim(),
+      place: place.trim(),
+      seatOption,
+      customSeatCount: seatOption === "other" ? Number(customSeatCount) : undefined,
+    };
+
     try {
-      await createMutation.mutateAsync({
-        templateId,
-        name: name.trim(),
-        reason: reason.trim() || undefined,
-        eventDate,
-        state,
-        district: district.trim(),
-        pincode: pincode.trim(),
-        place: place.trim(),
-        seatOption,
-        customSeatCount: seatOption === "other" ? Number(customSeatCount) : undefined,
-      });
+      const { payment } = await payMutation.mutateAsync(payload);
+      const redirectUrl = payment.redirectUrl;
+      if (!redirectUrl) {
+        setFormError("Payment could not be started. Please try again.");
+        return;
+      }
       resetForm();
-      onSuccess?.();
       onClose();
+      window.location.href = redirectUrl;
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Failed to submit");
+      setFormError(err instanceof Error ? err.message : "Failed to start payment");
     }
   };
 
@@ -140,14 +172,14 @@ export function CreateSheetRequestModal({ open, onClose, onSuccess }: Props) {
             <div>
               <h2 className="text-lg font-semibold text-slate-900">Create sheet request</h2>
               <p className="text-xs text-slate-500">
-                Details will be used to generate documents from your template
+                Event and location details for generating documents from your template
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={handleClose}
-            disabled={createMutation.isPending}
+            disabled={payMutation.isPending}
             className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
           >
             <X className="h-5 w-5" />
@@ -158,12 +190,12 @@ export function CreateSheetRequestModal({ open, onClose, onSuccess }: Props) {
           <div className="space-y-5 p-5">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className={labelClass}>Name *</label>
+                <label className={labelClass}>Request name *</label>
                 <input
                   className={inputClass}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Event or organization name"
+                  placeholder="e.g. Annual day batch A"
                   required
                 />
               </div>
@@ -173,12 +205,12 @@ export function CreateSheetRequestModal({ open, onClose, onSuccess }: Props) {
                   className={`${inputClass} min-h-[72px] resize-y`}
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  placeholder="Purpose of this sheet request"
+                  placeholder="Why this batch of documents is needed"
                   rows={2}
                 />
               </div>
               <div>
-                <label className={labelClass}>Date *</label>
+                <label className={labelClass}>Event date *</label>
                 <input
                   type="date"
                   className={inputClass}
@@ -190,17 +222,12 @@ export function CreateSheetRequestModal({ open, onClose, onSuccess }: Props) {
               </div>
               <div>
                 <label className={labelClass}>No. of seats *</label>
-                <select
-                  className={inputClass}
+                <FormSelect
                   value={seatOption}
-                  onChange={(e) => setSeatOption(e.target.value)}
-                >
-                  {SEAT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={setSeatOption}
+                  options={seatSelectOptions}
+                  placeholder="Select seats"
+                />
               </div>
               {seatOption === "other" && (
                 <div>
@@ -212,36 +239,39 @@ export function CreateSheetRequestModal({ open, onClose, onSuccess }: Props) {
                     className={inputClass}
                     value={customSeatCount}
                     onChange={(e) => setCustomSeatCount(e.target.value)}
-                    placeholder="Enter number"
+                    placeholder="Enter seat count"
                     required
                   />
                 </div>
               )}
               <div>
                 <label className={labelClass}>State *</label>
-                <select
-                  className={inputClass}
+                <FormSelect
                   value={state}
-                  onChange={(e) => setState(e.target.value)}
-                  required
-                >
-                  <option value="">Select state</option>
-                  {INDIAN_STATES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={handleStateChange}
+                  options={stateOptions}
+                  placeholder="Select state"
+                />
               </div>
               <div>
                 <label className={labelClass}>District *</label>
-                <input
-                  className={inputClass}
-                  value={district}
-                  onChange={(e) => setDistrict(e.target.value)}
-                  placeholder="District"
-                  required
-                />
+                {state && districtOptions.length > 0 ? (
+                  <FormSelect
+                    value={district}
+                    onValueChange={setDistrict}
+                    options={districtOptions}
+                    placeholder="Select district"
+                  />
+                ) : (
+                  <input
+                    className={inputClass}
+                    value={district}
+                    onChange={(e) => setDistrict(e.target.value)}
+                    placeholder={state ? "Enter district name" : "Select state first"}
+                    disabled={!state}
+                    required
+                  />
+                )}
               </div>
               <div>
                 <label className={labelClass}>Pincode *</label>
@@ -249,19 +279,19 @@ export function CreateSheetRequestModal({ open, onClose, onSuccess }: Props) {
                   className={inputClass}
                   value={pincode}
                   onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder="6-digit pincode"
+                  placeholder="6-digit PIN"
                   inputMode="numeric"
                   maxLength={6}
                   required
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className={labelClass}>Place *</label>
+                <label className={labelClass}>Venue / locality *</label>
                 <input
                   className={inputClass}
                   value={place}
                   onChange={(e) => setPlace(e.target.value)}
-                  placeholder="Venue or locality"
+                  placeholder="Hall, campus, or address line"
                   required
                 />
               </div>
@@ -270,7 +300,7 @@ export function CreateSheetRequestModal({ open, onClose, onSuccess }: Props) {
             <div>
               <label className={labelClass}>Template *</label>
               <p className="mb-3 text-xs text-slate-500">
-                Select a template — preview shows layout only (no real user data)
+                Choose the layout used to generate documents for this request
               </p>
               {templatesLoading && <PageLoader />}
               {!templatesLoading && templates.length === 0 && (
@@ -295,24 +325,39 @@ export function CreateSheetRequestModal({ open, onClose, onSuccess }: Props) {
             {formError && (
               <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</p>
             )}
+
+            <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-3 text-sm text-slate-700">
+              <p className="font-medium text-slate-900">Payment via PhonePe</p>
+              <p className="mt-1 text-xs text-slate-600">
+                ₹{(paymentConfig?.costPerSheetInr ?? 0.5).toFixed(2)} per seat · Total{" "}
+                <span className="font-semibold text-brand-800">
+                  {formatSheetOrderAmount(seatOption, seatOption === "other" ? Number(customSeatCount) : undefined)}
+                </span>
+              </p>
+              {paymentConfig?.mockMode && (
+                <p className="mt-1 text-xs text-amber-700">
+                  Test mode: PhonePe keys not set — payment will be simulated until you add credentials.
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/80 px-5 py-4">
             <button
               type="button"
               onClick={handleClose}
-              disabled={createMutation.isPending}
+              disabled={payMutation.isPending}
               className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={createMutation.isPending || templates.length === 0}
+              disabled={payMutation.isPending || templates.length === 0}
               className="flex items-center gap-2 rounded-xl bg-brand-800 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-900 disabled:opacity-60"
             >
-              {createMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-              Submit request
+              {payMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Pay {formatSheetOrderAmount(seatOption, seatOption === "other" ? Number(customSeatCount) : undefined)} with PhonePe
             </button>
           </div>
         </form>

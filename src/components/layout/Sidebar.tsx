@@ -1,8 +1,28 @@
 import { NavLink } from "react-router-dom";
-import { ChevronRight, FileText, Rocket } from "lucide-react";
+import { ChevronRight, FileText } from "lucide-react";
 import { NAV_ITEMS } from "../../config/constants/navigation";
+import { useAuth } from "../../features/auth/AuthContext";
+import { useNotificationsQuery } from "../../features/vendor/hooks/useVendorQueries";
+
+function initials(name: string) {
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
 
 export function Sidebar() {
+  const { user } = useAuth();
+  const { data: notifications } = useNotificationsQuery();
+
+  const navItems = NAV_ITEMS.map((item) =>
+    item.path === "/notifications" && notifications
+      ? { ...item, badge: notifications.unreadCount || undefined }
+      : item,
+  );
+
   return (
     <aside className="flex h-full w-[260px] shrink-0 flex-col border-r border-slate-200 bg-white">
       <div className="border-b border-slate-100 px-5 py-5">
@@ -18,7 +38,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
-        {NAV_ITEMS.map((item) => (
+        {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
@@ -42,48 +62,14 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className="space-y-3 border-t border-slate-100 p-4">
-        <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-          <p className="text-xs font-medium text-slate-500">Wallet Balance</p>
-          <p className="mt-1 text-xl font-bold text-slate-900">₹2,450.00</p>
-          <div className="mt-3">
-            <div className="mb-1 flex justify-between text-[11px] text-slate-500">
-              <span>500 sheets remaining</span>
-              <span>50%</span>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
-              <div className="h-full w-1/2 rounded-full bg-brand-600" />
-            </div>
-          </div>
-          <button
-            type="button"
-            className="mt-3 w-full rounded-lg bg-brand-800 py-2 text-sm font-semibold text-white hover:bg-brand-900"
-          >
-            Add Funds
-          </button>
-        </div>
-
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 p-4">
-          <p className="text-xs font-semibold text-indigo-900">Upgrade Your Plan</p>
-          <p className="mt-1 text-[11px] leading-relaxed text-indigo-700/80">
-            Unlock more sheets & premium features
-          </p>
-          <button
-            type="button"
-            className="mt-3 rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50"
-          >
-            View Plans
-          </button>
-          <Rocket className="absolute -bottom-1 right-2 h-12 w-12 text-indigo-300/60" />
-        </div>
-
+      <div className="border-t border-slate-100 p-4">
         <div className="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 hover:bg-slate-50">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-800 text-xs font-bold text-white">
-            VT
+            {user ? initials(user.name) : "?"}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-slate-900">Vendor Tech</p>
-            <p className="text-xs text-slate-500">Pro Plan</p>
+            <p className="truncate text-sm font-semibold text-slate-900">{user?.name ?? "Account"}</p>
+            <p className="truncate text-xs text-slate-500">{user?.email ?? user?.mobileNumber ?? ""}</p>
           </div>
           <ChevronRight className="h-4 w-4 text-slate-400" />
         </div>
