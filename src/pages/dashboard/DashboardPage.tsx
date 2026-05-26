@@ -277,7 +277,7 @@ export function DashboardPage() {
             </div>
           </div>
           {usageChart.every((d) => d.created === 0 && d.used === 0) ? (
-            <div className="flex h-[280px] flex-col items-center justify-center rounded-xl bg-slate-50 text-sm text-slate-500">
+            <div className="flex h-70 flex-col items-center justify-center rounded-xl bg-slate-50 text-sm text-slate-500">
               <FileText className="mb-2 h-8 w-8 text-slate-300" />
               No activity in this period yet. Create a sheet request to get started.
             </div>
@@ -300,7 +300,7 @@ export function DashboardPage() {
           {recentActivity.length === 0 ? (
             <p className="text-sm text-slate-500">No recent activity yet.</p>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-80 overflow-y-scroll">
               {recentActivity.map((a, i) => {
                 const style = ACTIVITY_STYLES[a.type];
                 const Icon = style.icon;

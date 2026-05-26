@@ -5,7 +5,6 @@ import {
   CreditCard,
   FileStack,
   GraduationCap,
-  HelpCircle,
   LayoutDashboard,
   LayoutTemplate,
   PenTool,
@@ -32,6 +31,5 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Wallet & Billing", path: "/wallet", icon: CreditCard },
   { label: "Notifications", path: "/notifications", icon: Bell },
   { label: "Security", path: "/security", icon: Shield },
-  { label: "Support", path: "/support", icon: HelpCircle },
   { label: "Settings", path: "/settings", icon: Settings },
 ];

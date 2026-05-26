@@ -12,7 +12,7 @@ export function VendorLayout() {
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Header />
         <main className="flex flex-1 flex-col overflow-y-auto">
-          <div className="flex-1 p-6">
+          <div className="flex-1 p-6 rounded-t-xl">
             <Outlet />
           </div>
         </main>

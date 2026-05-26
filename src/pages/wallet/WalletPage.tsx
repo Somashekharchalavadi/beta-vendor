@@ -115,7 +115,7 @@ export function WalletPage() {
           {data.transactions.length === 0 ? (
             <p className="text-sm text-slate-500">No transactions yet.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 max-h-80 overflow-y-scroll">
               {data.transactions.map((t, i) => (
                 <div key={i} className="flex items-center justify-between text-sm">
                   <div>
