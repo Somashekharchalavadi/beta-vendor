@@ -1,0 +1,1 @@
+function e(e){return e.type===`sheet_request`&&e.templateId?`/sheets?templateId=${encodeURIComponent(e.templateId)}&page=1`:e.type===`template`&&e.id?`/templates/${e.id}`:null}export{e as t};
