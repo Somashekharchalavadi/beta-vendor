@@ -1,62 +1,62 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { PageLoader } from "../../components/common/PageLoader";
-import { AuthProvider } from "../../features/auth/AuthContext";
-import { GuestRoute } from "../../features/auth/GuestRoute";
-import { ProtectedRoute } from "../../features/auth/ProtectedRoute";
-import { VendorLayout } from "../../layouts/VendorLayout";
+import { PageLoader } from "../components/common/PageLoader";
+import { AuthProvider } from "../features/auth/AuthContext";
+import { GuestRoute } from "../features/auth/GuestRoute";
+import { ProtectedRoute } from "../features/auth/ProtectedRoute";
+import { VendorLayout } from "./VendorLayout";
 
 const LoginPage = lazy(() =>
-  import("../../pages/auth/LoginPage").then((m) => ({ default: m.LoginPage })),
+  import("../pages/auth/LoginPage").then((m) => ({ default: m.LoginPage })),
 );
 const EditorPage = lazy(() =>
-  import("../../pages/editor/EditorPage").then((m) => ({ default: m.EditorPage })),
+  import("../pages/editor/EditorPage").then((m) => ({ default: m.EditorPage })),
 );
 const DashboardPage = lazy(() =>
-  import("../../pages/dashboard/DashboardPage").then((m) => ({ default: m.DashboardPage })),
+  import("../pages/dashboard/DashboardPage").then((m) => ({ default: m.DashboardPage })),
 );
 const SheetsPage = lazy(() =>
-  import("../../pages/sheets/SheetsPage").then((m) => ({ default: m.SheetsPage })),
+  import("../pages/sheets/SheetsPage").then((m) => ({ default: m.SheetsPage })),
 );
 const TemplatesPage = lazy(() =>
-  import("../../pages/templates/TemplatesPage").then((m) => ({ default: m.TemplatesPage })),
+  import("../pages/templates/TemplatesPage").then((m) => ({ default: m.TemplatesPage })),
 );
 const TemplateDetailPage = lazy(() =>
-  import("../../pages/templates/TemplateDetailPage").then((m) => ({ default: m.TemplateDetailPage })),
+  import("../pages/templates/TemplateDetailPage").then((m) => ({ default: m.TemplateDetailPage })),
 );
 const AnalyticsPage = lazy(() =>
-  import("../../pages/analytics/AnalyticsPage").then((m) => ({ default: m.AnalyticsPage })),
+  import("../pages/analytics/AnalyticsPage").then((m) => ({ default: m.AnalyticsPage })),
 );
 const WalletPage = lazy(() =>
-  import("../../pages/wallet/WalletPage").then((m) => ({ default: m.WalletPage })),
+  import("../pages/wallet/WalletPage").then((m) => ({ default: m.WalletPage })),
 );
 const PlaceholderPage = lazy(() =>
-  import("../../pages/PlaceholderPage").then((m) => ({ default: m.PlaceholderPage })),
+  import("../pages/PlaceholderPage").then((m) => ({ default: m.PlaceholderPage })),
 );
 const SearchPage = lazy(() =>
-  import("../../pages/search/SearchPage").then((m) => ({ default: m.SearchPage })),
+  import("../pages/search/SearchPage").then((m) => ({ default: m.SearchPage })),
 );
 const NotificationsPage = lazy(() =>
-  import("../../pages/notifications/NotificationsPage").then((m) => ({
+  import("../pages/notifications/NotificationsPage").then((m) => ({
     default: m.NotificationsPage,
   })),
 );
 const OrganizationsPage = lazy(() =>
-  import("../../pages/organizations/OrganizationsPage").then((m) => ({
+  import("../pages/organizations/OrganizationsPage").then((m) => ({
     default: m.OrganizationsPage,
   })),
 );
 const StudentsPage = lazy(() =>
-  import("../../pages/students/StudentsPage").then((m) => ({ default: m.StudentsPage })),
+  import("../pages/students/StudentsPage").then((m) => ({ default: m.StudentsPage })),
 );
 const SettingsPage = lazy(() =>
-  import("../../pages/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })),
+  import("../pages/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })),
 );
 const SupportPage = lazy(() =>
-  import("../../pages/support/SupportPage").then((m) => ({ default: m.SupportPage })),
+  import("../pages/support/SupportPage").then((m) => ({ default: m.SupportPage })),
 );
 const PaymentResultPage = lazy(() =>
-  import("../../pages/payment/PaymentResultPage").then((m) => ({ default: m.PaymentResultPage })),
+  import("../pages/payment/PaymentResultPage").then((m) => ({ default: m.PaymentResultPage })),
 );
 
 function LazyPage({ children }: { children: React.ReactNode }) {

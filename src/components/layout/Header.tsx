@@ -162,7 +162,7 @@ export function Header() {
               {/* Menu */}
               <div className="p-2">
                 <Link
-                  to="/profile"
+                  to="/security"
                   className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50"
                 >
                   <User className="h-4 w-4" />
@@ -170,7 +170,7 @@ export function Header() {
                 </Link>
 
                 <Link
-                  to="/billing"
+                  to="/wallet"
                   className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50"
                 >
                   <CreditCard className="h-4 w-4" />

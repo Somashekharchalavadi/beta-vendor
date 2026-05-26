@@ -1,6 +1,6 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
-import { AppRouter } from "./app/router/AppRouter";
+import { AppRouter } from "./layouts/AppRouter";
 import { ApiMessageDialog } from "./components/common/ApiMessageDialog";
 import { ConfirmProvider } from "./components/common/ConfirmDialog";
 import { TopLoadingBar } from "./components/common/TopLoadingBar";
